@@ -11,9 +11,9 @@ namespace SithCompany.Patches
         [HarmonyPostfix]
         static void LightningStrikePatch(PlayerControllerB __instance, int emoteID)
         {
-            if (emoteID != 2)
+            if ((emoteID != 2) || (__instance.sprintMeter < 0.6f))
             {
-                return; // Not the lightning emote
+                return;
             }
             // Set up AudioSource
             AudioSource thunderOrigin;
@@ -41,7 +41,7 @@ namespace SithCompany.Patches
             EZLightning.API.Strike(strikePosition , strikeOrigin, 1f, 0.5f, 0.5f, 0, -1f, minCount: 0, maxCount: 1);
 
             // Dock sprint
-            __instance.sprintMeter = Mathf.Clamp(__instance.sprintMeter - 0.75f, 0f, 1f);
+            __instance.sprintMeter = Mathf.Clamp(__instance.sprintMeter - 0.6f, 0f, 1f);
         }
     }
 }
