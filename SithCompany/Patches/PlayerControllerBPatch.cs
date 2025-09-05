@@ -39,6 +39,9 @@ namespace SithCompany.Patches
 
             // Fire lightning bolt
             EZLightning.API.Strike(strikePosition , strikeOrigin, 1f, 0.5f, 0.5f, 0, -1f, minCount: 0, maxCount: 1);
+
+            // Dock sprint
+            __instance.sprintMeter = Mathf.Clamp(__instance.sprintMeter - 0.75f, 0f, 1f);
         }
     }
 }
