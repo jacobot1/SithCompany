@@ -3,10 +3,14 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using SithCompany.Patches;
+using SithCompany.Abilities;
+using SithCompany.Util;
+using UnityEngine;
 
 namespace SithCompany
 {
     [BepInPlugin(modGUID, modName, modVersion)]
+    [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.HardDependency)]
     public class SithCompanyMod : BaseUnityPlugin
     {
         // Mod metadata
@@ -23,12 +27,22 @@ namespace SithCompany
         public static ConfigEntry<float> configLightningLength;
         public static ConfigEntry<bool> configKillEnemies;
         public static ConfigEntry<bool> configKillPlayers;
+        public static ConfigEntry<float> configForceRadius;
 
         // Create static instance
         public static SithCompanyMod Instance;
 
+        // Create static instance of input class
+        internal static SithInput SithInputInstance;
+
         // Initialize logging
         public static ManualLogSource mls;
+
+        // Config change handler
+        private void OnSettingChanged(object Sender, System.EventArgs e)
+        {
+            ForceAbility.indicator.transform.localScale = SithCompanyMod.configForceRadius.Value * 2f * Vector3.one;
+        }
 
         private void Awake()
         {
@@ -37,6 +51,9 @@ namespace SithCompany
             {
                 Instance = this;
             }
+            
+            SithInputInstance = new SithInput();
+            SithInputInstance.Enable();
 
             // Send alive message
             mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
@@ -63,10 +80,20 @@ namespace SithCompany
                                                 true,
                                                 "Whether to kill players on lightning strike");
 
-            configKillPlayers = Config.Bind("Lightning.Damage",
+            configKillEnemies = Config.Bind("Lightning.Damage",
                                                 "Kill Enemies",
                                                 true,
                                                 "Whether to kill enemies on lightning strike");
+
+            configForceRadius = Config.Bind("Force",
+                                                "Force Radius",
+                                                2f,
+                                                "How large the influence of the Force should be");
+
+            ForceAbility.CreateIndicator(configForceRadius.Value);
+
+            // Subscribe to config changes
+            configForceRadius.SettingChanged += OnSettingChanged;
 
             // Do the patching
             harmony.PatchAll(typeof(SithCompanyMod));
