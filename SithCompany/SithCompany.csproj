@@ -26,9 +26,14 @@
     </Reference>
     <Reference Include="EZDamage">
       <HintPath>..\..\EZDamage\EZDamage\bin\Debug\netstandard2.1\EZDamage.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="EZLightning">
       <HintPath>..\..\EZLightning\EZLightning\bin\Release\netstandard2.1\EZLightning.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="LethalCompanyInputUtils">
+      <HintPath>D:\GameTools\Lethal Company\Mods\Rune580-LethalCompany_InputUtils-0.7.10\plugins\LethalCompanyInputUtils\LethalCompanyInputUtils.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Netcode.Runtime">
       <HintPath>D:\SteamLibrary\steamapps\common\Lethal Company\Lethal Company_Data\Managed\Unity.Netcode.Runtime.dll</HintPath>
@@ -38,16 +43,8 @@
       <HintPath>D:\SteamLibrary\steamapps\common\Lethal Company\Lethal Company_Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine.AudioModule">
-      <HintPath>D:\SteamLibrary\steamapps\common\Lethal Company\Lethal Company_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>D:\SteamLibrary\steamapps\common\Lethal Company\Lethal Company_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.PhysicsModule">
-      <HintPath>D:\SteamLibrary\steamapps\common\Lethal Company\Lethal Company_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>

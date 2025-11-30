@@ -11,31 +11,25 @@ namespace SithCompany.Patches
         [HarmonyPostfix]
         static void LightningStrikePatch(PlayerControllerB __instance, int emoteID)
         {
-            if ((emoteID != 2) || (__instance.sprintMeter < 0.6f))
+            if ((emoteID != 2) || (__instance.sprintMeter < 0.6f) || (__instance.isTypingChat) || (__instance.inTerminalMenu))
             {
                 return;
             }
-            // Set up AudioSource
-            AudioSource thunderOrigin;
-            GameObject audioObject = new GameObject("SithCompany_ThunderAudioSource");
-            audioObject.SetActive(true);
-            UnityEngine.Object.DontDestroyOnLoad(audioObject); // persist across scenes
-            thunderOrigin = audioObject.AddComponent<AudioSource>();
-            thunderOrigin.spatialBlend = 0f; // 2D sound
-            thunderOrigin.minDistance = 5f;
-            thunderOrigin.maxDistance = 200f;
-            thunderOrigin.rolloffMode = AudioRolloffMode.Logarithmic;
-            thunderOrigin.playOnAwake = false;
-            thunderOrigin.loop = false;
-            thunderOrigin.enabled = true;
 
             // Simplifications
             Vector3 playerPosition = __instance.transform.position;
             Vector3 strikeOrigin = playerPosition + __instance.transform.forward * 1f + Vector3.up * 2f;
             Vector3 strikePosition = __instance.gameplayCamera.transform.position + __instance.gameplayCamera.transform.forward * SithCompanyMod.configLightningLength.Value;
 
-            // Damage Everything
-            EZDamage.API.KillEverything(strikePosition, SithCompanyMod.configLightningDamageRadius.Value, CauseOfDeath.Electrocution);
+            // Damage Selector
+            if (SithCompanyMod.configKillEnemies.Value)
+            {
+                EZDamage.API.KillEnemies(strikePosition, SithCompanyMod.configLightningDamageRadius.Value);
+            }
+            if (SithCompanyMod.configKillPlayers.Value)
+            {
+                EZDamage.API.KillPlayers(strikePosition, SithCompanyMod.configLightningDamageRadius.Value, CauseOfDeath.Electrocution);
+            }
 
             // Fire lightning bolt
             EZLightning.API.Strike(strikePosition , strikeOrigin, 1f, 0.5f, 0.5f, 0, -1f, minCount: 0, maxCount: 1);
