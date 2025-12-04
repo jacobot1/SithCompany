@@ -121,12 +121,14 @@ namespace SithCompany.Abilities
                 if (grabCol != null && !grabbableHits.ContainsKey(grabCol))
                 {
                     grabbableHits.Add(grabCol, grabCol.transform.position - indicator.transform.position);
+                    SithCompanyMod.mls.LogInfo("Found GrabbableObject at " + grabCol.transform.position.ToString());
                 }
                 // Player
                 var playerCol = c.GetComponent<PlayerControllerB>();
                 if (playerCol != null && !playerHits.ContainsKey(playerCol))
                 {
                     playerHits.Add(playerCol, playerCol.transform.position - indicator.transform.position);
+                    SithCompanyMod.mls.LogInfo("Found PlayerControllerB at " + playerCol.transform.position.ToString());
                 }
                 // Enemy
                 var enemyCol = c.GetComponent<EnemyAI>();
@@ -139,6 +141,7 @@ namespace SithCompany.Abilities
                         if (enemy != null && !enemyHits.ContainsKey(enemy))
                         {
                             enemyHits.Add(enemy, enemy.transform.position - indicator.transform.position);
+                            SithCompanyMod.mls.LogInfo("Found EnemyAI at " + enemy.transform.position.ToString());
                         }
                     }
                 }
