@@ -90,8 +90,6 @@ namespace SithCompany
                                                 2f,
                                                 "How large the influence of the Force should be");
 
-            ForceAbility.CreateIndicator(configForceRadius.Value);
-
             // Subscribe to config changes
             configForceRadius.SettingChanged += OnSettingChanged;
 

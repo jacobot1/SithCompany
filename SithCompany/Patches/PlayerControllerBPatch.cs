@@ -1,8 +1,10 @@
 ﻿using GameNetcodeStuff;
 using HarmonyLib;
 using SithCompany.Abilities;
-using UnityEngine;
 using SithCompany.Util;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace SithCompany.Patches
 {
@@ -13,6 +15,7 @@ namespace SithCompany.Patches
         [HarmonyPostfix]
         static void HookIntoPlayerControllerPatch(PlayerControllerB __instance)
         {
+            if (!__instance.IsOwner || !__instance.isPlayerControlled) return;
             if ((!__instance.isTypingChat) && (!__instance.inTerminalMenu))
             {
                 if ((SithCompanyMod.SithInputInstance.LightningButton.WasPressedThisFrame()) && (__instance.sprintMeter >= 0.6f))
@@ -30,8 +33,31 @@ namespace SithCompany.Patches
                     {
                         ForceAbility.UseTheForce(__instance);
                     }
+                    else if (SithCompanyMod.SithInputInstance.UseTheForceButton.WasReleasedThisFrame())
+                    {
+                        ForceAbility.gotForcablesAlready = false;
+                    }
                 }
             }
+        }
+        [HarmonyPatch("ScrollMouse_performed")]
+        [HarmonyPrefix]
+        static bool ForceIndicatorScrollPatch(PlayerControllerB __instance, ref InputAction.CallbackContext context)
+        {
+            if (ForceAbility.forceModeEnabled)
+            {
+                float amount = context.ReadValue<float>();
+                if (amount > 0f)
+                {
+                    ForceAbility.indicatorDistance += 0.2f;
+                }
+                else
+                {
+                    ForceAbility.indicatorDistance -= 0.2f;
+                }
+                return false;
+            }
+            return true;
         }
     }
 }

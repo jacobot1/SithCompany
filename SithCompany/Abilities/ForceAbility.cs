@@ -1,6 +1,8 @@
-﻿using GameNetcodeStuff;
+﻿using BepInEx;
+using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using UnityEngine;
 
@@ -9,46 +11,50 @@ namespace SithCompany.Abilities
     internal class ForceAbility
     {
         public static bool forceModeEnabled = false;
-        public static float indicatorDistance = 10f;
+        public static float indicatorDistance = 5f;
         public static bool gotForcablesAlready = false;
         public static Dictionary<UnityEngine.Object, Vector3> savedOffsets = new Dictionary<UnityEngine.Object, Vector3>();
         public static GameObject indicator;
 
+        public static Dictionary<GrabbableObject, Vector3> grabbableHits = new Dictionary<GrabbableObject, Vector3>();
+        public static Dictionary<PlayerControllerB, Vector3> playerHits = new Dictionary<PlayerControllerB, Vector3>();
+        public static Dictionary<EnemyAI, Vector3> enemyHits = new Dictionary<EnemyAI, Vector3>();
+
         public static void CreateIndicator(float radius)
         {
-            // Create primitive sphere
+            // Create sphere
             indicator = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            indicator.name = "SithCompanyForceIndicator";
-
-            // Scale to radius
+            indicator.name = "ThinBubbleIndicator";
+            UnityEngine.Object.Destroy(indicator.GetComponent<Collider>());
             indicator.transform.localScale = Vector3.one * radius * 2f;
 
-            // Load HDRP Unlit shader
-            Shader shader = Shader.Find("HDRP/Unlit");
-            if (shader == null)
+            // Import assetbundle
+            var bundlePath = Path.Combine(Paths.PluginPath, "SeismicMods-SithCompany/bubblebundle");
+            var bundle = AssetBundle.LoadFromFile(bundlePath);
+
+            // Find the shader compiled from file above
+            Shader bubbleShader = bundle.LoadAsset<Shader>("ThinBubbleUnlit");
+            if (bubbleShader == null)
             {
-                Debug.LogError("HDRP/Unlit shader not found!");
+                Debug.LogError("[BubbleIndicator] Shader 'Custom/ThinBubbleUnlit' not found. Make sure the .shader file is included in the build.");
                 return;
             }
 
-            Material mat = new Material(shader);
+            Material mat = new Material(bubbleShader);
+            // Set default colors (you can tweak these)
+            mat.SetColor("_BaseColor", new Color(1f, 0f, 0f, 0.06f));   // very transparent red
+            mat.SetColor("_RimColor", new Color(1f, 0.35f, 0.35f, 1f));  // soft rim
+            mat.SetFloat("_RimPower", 3f);
+            mat.SetFloat("_RimIntensity", 0.9f);
 
-            // Transparent red color
-            mat.SetColor("_UnlitColor", new Color(1f, 0f, 0f, 0.3f));
+            // Make sure render queue is transparent
+            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
 
-            // Transparent surface
-            mat.SetFloat("_SurfaceType", 1); // 0 = Opaque, 1 = Transparent
-            mat.SetFloat("_BlendMode", 0);   // 0 = Alpha
-            mat.SetFloat("_ZWrite", 0);      // disable depth writing
+            // Apply material to renderer
+            var rend = indicator.GetComponent<Renderer>();
+            rend.material = mat;
 
-            // Correct HDRP blending
-            mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-
-            // Assign material
-            indicator.GetComponent<Renderer>().material = mat;
-
-            // Start hidden
+            // Start disabled by default
             indicator.SetActive(false);
         }
 
@@ -58,16 +64,10 @@ namespace SithCompany.Abilities
             {
                 // Disable force mode
                 forceModeEnabled = false;
+                savedOffsets.Clear();
                 SithCompanyMod.mls.LogInfo("Force Mode Disabled");
                 // Hide indicator
-                if (ForceAbility.indicator != null)
-                {
-                    ForceAbility.indicator.SetActive(false);
-                }
-                else
-                {
-                    SithCompanyMod.mls.LogWarning("Force Indicator is null when trying to disable Force Mode.");
-                }
+                indicator.SetActive(false);
             }
             else
             {
@@ -75,85 +75,74 @@ namespace SithCompany.Abilities
                 forceModeEnabled = true;
                 SithCompanyMod.mls.LogInfo("Force Mode Enabled");
                 // Show indicator
-                if (ForceAbility.indicator != null)
+                if (indicator == null)
                 {
-                    ForceAbility.indicator.SetActive(false);
+                    ForceAbility.CreateIndicator(SithCompanyMod.configForceRadius.Value);
                 }
-                else
-                {
-                    SithCompanyMod.mls.LogWarning("Force Indicator is null when trying to enable Force Mode.");
-                }
+                indicator.SetActive(true);
             }
         }
         public static void UseTheForce(PlayerControllerB player)
         {
             if (!gotForcablesAlready)
             {
-                LockTargetsRelativeToSphere(ForceAbility.indicator.transform.position, FindTargetsInSphere(ForceAbility.indicator.transform.position, SithCompanyMod.configForceRadius.Value));
-
+                playerHits.Clear();
+                enemyHits.Clear();
+                grabbableHits.Clear();
+                FindTargetsInSphere(indicator.transform.position, SithCompanyMod.configForceRadius.Value);
+                gotForcablesAlready = true;
             }
-
+            foreach (var grabObject in grabbableHits)
+            {
+                grabObject.Key.transform.position = indicator.transform.position + grabObject.Value;
+            }
+            foreach (var playerObject in playerHits)
+            {
+                if (playerObject.Key != GameNetworkManager.Instance.localPlayerController)
+                {
+                    playerObject.Key.transform.position = indicator.transform.position + playerObject.Value;
+                }
+            }
+            foreach (var enemyObject in enemyHits)
+            {
+                enemyObject.Key.transform.position = indicator.transform.position + enemyObject.Value;
+            }
         }
 
         // find all grabbable objects, players, and enemies in a sphere
-        public static List<UnityEngine.Object> FindTargetsInSphere(Vector3 center, float radius)
+        public static void FindTargetsInSphere(Vector3 center, float radius)
         {
-            List<UnityEngine.Object> results = new List<UnityEngine.Object>();
-
             Collider[] hits = Physics.OverlapSphere(center, radius);
 
             foreach (Collider c in hits)
             {
                 // Grabbable
-                var grab = c.GetComponentInParent<GrabbableObject>();
-                if (grab != null && !results.Contains(grab))
-                    results.Add(grab);
-
-                // Player
-                var player = c.GetComponentInParent<PlayerControllerB>();
-                if (player != null && !results.Contains(player))
-                    results.Add(player);
-
-                // Enemy
-                var enemy = c.GetComponentInParent<EnemyAI>();
-                if (enemy != null && !results.Contains(enemy))
-                    results.Add(enemy);
-            }
-
-            return results;
-        }
-        public static void LockTargetsRelativeToSphere(
-        Vector3 sphereCenter,
-        List<UnityEngine.Object> targets)
-        {
-            foreach (var target in targets)
-            {
-                // Resolve root transform
-                Transform t = ResolveTransform(target);
-                if (t == null) continue;
-
-                // Save offset only once
-                if (!savedOffsets.ContainsKey(target))
+                var grabCol = c.GetComponent<GrabbableObject>();
+                if (grabCol != null && !grabbableHits.ContainsKey(grabCol))
                 {
-                    savedOffsets[target] = t.position - sphereCenter;
+                    grabbableHits.Add(grabCol, grabCol.transform.position - indicator.transform.position);
                 }
-
-                // Maintain displacement
-                t.position = sphereCenter + savedOffsets[target];
+                // Player
+                var playerCol = c.GetComponent<PlayerControllerB>();
+                if (playerCol != null && !playerHits.ContainsKey(playerCol))
+                {
+                    playerHits.Add(playerCol, playerCol.transform.position - indicator.transform.position);
+                }
+                // Enemy
+                var enemyCol = c.GetComponent<EnemyAI>();
+                if (enemyCol != null)
+                {
+                    EnemyAICollisionDetect enemyCollision = enemyCol.GetComponent<EnemyAICollisionDetect>();
+                    if ((enemyCollision != null) && (enemyCollision.mainScript != null))
+                    {
+                        var enemy = enemyCollision.mainScript;
+                        if (enemy != null && !enemyHits.ContainsKey(enemy))
+                        {
+                            enemyHits.Add(enemy, enemy.transform.position - indicator.transform.position);
+                        }
+                    }
+                }
             }
-        }
-        private static Transform ResolveTransform(UnityEngine.Object obj)
-        {
-            if (obj is GrabbableObject g)
-                return g.transform;
-
-            if (obj is PlayerControllerB p)
-                return p.transform;
-
-            if (obj is EnemyAI e)
-                return e.transform;
-
-            return null;
         }
     }
 }
