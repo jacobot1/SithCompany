@@ -36,6 +36,12 @@ namespace SithCompany.Patches
                     else if (SithCompanyMod.SithInputInstance.UseTheForceButton.WasReleasedThisFrame())
                     {
                         ForceAbility.gotForcablesAlready = false;
+                        foreach (var grabObject in ForceAbility.grabbableHits)
+                        {
+                            grabObject.Value.position = grabObject.Key.transform.position;
+                            grabObject.Key.parentObject = grabObject.Value;
+                            SithCompanyMod.mls.LogInfo("Set GrabbableObject parentObject");
+                        }
                     }
                 }
             }

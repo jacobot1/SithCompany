@@ -13,10 +13,9 @@ namespace SithCompany.Abilities
         public static bool forceModeEnabled = false;
         public static float indicatorDistance = 5f;
         public static bool gotForcablesAlready = false;
-        public static Dictionary<UnityEngine.Object, Vector3> savedOffsets = new Dictionary<UnityEngine.Object, Vector3>();
         public static GameObject indicator;
 
-        public static Dictionary<GrabbableObject, Vector3> grabbableHits = new Dictionary<GrabbableObject, Vector3>();
+        public static Dictionary<GrabbableObject, Transform> grabbableHits = new Dictionary<GrabbableObject, Transform>();
         public static Dictionary<PlayerControllerB, Vector3> playerHits = new Dictionary<PlayerControllerB, Vector3>();
         public static Dictionary<EnemyAI, Vector3> enemyHits = new Dictionary<EnemyAI, Vector3>();
 
@@ -64,7 +63,6 @@ namespace SithCompany.Abilities
             {
                 // Disable force mode
                 forceModeEnabled = false;
-                savedOffsets.Clear();
                 SithCompanyMod.mls.LogInfo("Force Mode Disabled");
                 // Hide indicator
                 indicator.SetActive(false);
@@ -94,18 +92,21 @@ namespace SithCompany.Abilities
             }
             foreach (var grabObject in grabbableHits)
             {
-                grabObject.Key.transform.position = indicator.transform.position + grabObject.Value;
+                grabObject.Key.parentObject = indicator.transform;
+                // SithCompanyMod.mls.LogInfo("Set GrabbableObject transform.position to " + grabObject.Key.transform.position);
             }
             foreach (var playerObject in playerHits)
             {
                 if (playerObject.Key != GameNetworkManager.Instance.localPlayerController)
                 {
                     playerObject.Key.transform.position = indicator.transform.position + playerObject.Value;
+                    SithCompanyMod.mls.LogInfo("Set PlayerControllerB transform.position to " + playerObject.Key.transform.position);
                 }
             }
             foreach (var enemyObject in enemyHits)
             {
                 enemyObject.Key.transform.position = indicator.transform.position + enemyObject.Value;
+                SithCompanyMod.mls.LogInfo("Set EnemyAI transform.position to " + enemyObject.Key.transform.position);
             }
         }
 
@@ -120,7 +121,7 @@ namespace SithCompany.Abilities
                 var grabCol = c.GetComponent<GrabbableObject>();
                 if (grabCol != null && !grabbableHits.ContainsKey(grabCol))
                 {
-                    grabbableHits.Add(grabCol, grabCol.transform.position - indicator.transform.position);
+                    grabbableHits.Add(grabCol, grabCol.parentObject);
                     SithCompanyMod.mls.LogInfo("Found GrabbableObject at " + grabCol.transform.position.ToString());
                 }
                 // Player
