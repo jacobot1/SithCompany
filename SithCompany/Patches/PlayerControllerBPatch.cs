@@ -57,13 +57,10 @@ namespace SithCompany.Patches
                             // 3. Clear the Unity Transform parent and maintain the current world position
                             grabObject.Key.transform.SetParent(null, true);
 
-                            // 4. Force teleport the world position to the player's feet
+                            // 4. Force teleport the world position to the indicator
                             grabObject.Key.transform.position = indicatorDropWorldPos;
 
-                            // Fix weird rotation
-                            grabObject.Key.transform.rotation = Quaternion.Euler(grabObject.Key.itemProperties.restingRotation);
-
-                            // 5. CRITICAL: Manually set the field FallToGround relies on, using the new world position as the local position.
+                            // 5. Manually set the field FallToGround relies on, using the new world position as the local position.
                             grabObject.Key.startFallingPosition = grabObject.Key.transform.localPosition;
 
 

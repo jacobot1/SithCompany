@@ -107,7 +107,6 @@ namespace SithCompany.Abilities
                 grabObject.Key.transform.SetParent(indicator.transform, true);
                 grabObject.Key.parentObject = indicator.transform;
                 grabObject.Key.isHeld = true;
-                grabObject.Key.transform.rotation = indicator.transform.rotation;
                 grabObject.Key.EnablePhysics(false);
                 // SithCompanyMod.mls.LogInfo("Set GrabbableObject transform.position to " + grabObject.Key.transform.position);
             }
