@@ -120,11 +120,89 @@ namespace SithCompany.Abilities
             }
             foreach (var enemyObject in enemyHits)
             {
-                enemyObject.Key.transform.position = indicator.transform.position + enemyObject.Value;
+                EnemyAI enemy = enemyObject.Key;
+
+                // 1. Force the position
+                enemy.transform.position = indicator.transform.position + enemyObject.Value;
+
+                // CRITICAL FIX A: Disable NavMeshAgent and AI calculation entirely
+                enemy.SetClientCalculatingAI(false);
+
+                // CRITICAL FIX B: Set internal flag to pause AI logic in the Update loop
+                enemy.inSpecialAnimation = true;
+
                 SithCompanyMod.mls.LogInfo("Set EnemyAI transform.position to " + enemyObject.Key.transform.position);
             }
         }
+        public static void ReleaseTheForce()
+        {
+            gotForcablesAlready = false;
+            ReleaseGrabbables();
+            ReleaseEnemies();
+        }
+        public static void ReleaseGrabbables()
+        {
+            // Define a guaranteed safe drop location near the indicator
+            Vector3 indicatorDropWorldPos = indicator.transform.position;
+            indicatorDropWorldPos.y += 0.1f;
 
+            foreach (var grabObject in grabbableHits)
+            {
+                // 1. Clear internal state flags FIRST
+                grabObject.Key.parentObject = null;
+                grabObject.Key.isHeld = false;
+
+                // 2. Release network ownership (Crucial for local physics authority)
+                if (grabObject.Key.IsOwner)
+                {
+                    grabObject.Key.gameObject.GetComponent<NetworkObject>().RemoveOwnership();
+                }
+
+                // 3. Clear the Unity Transform parent and maintain the current world position
+                grabObject.Key.transform.SetParent(null, true);
+
+                // 4. Force teleport the world position to the indicator
+                grabObject.Key.transform.position = indicatorDropWorldPos;
+
+                // 5. Manually set the field FallToGround relies on, using the new world position as the local position.
+                grabObject.Key.startFallingPosition = grabObject.Key.transform.localPosition;
+
+
+                // 6. Temporarily disable colliders for safe raycasting
+                if (grabObject.Key.propBody != null)
+                {
+                    grabObject.Key.propBody.isKinematic = false;
+                    grabObject.Key.propBody.velocity = Vector3.zero;
+                    grabObject.Key.propBody.angularVelocity = Vector3.zero;
+                }
+                grabObject.Key.EnablePhysics(false);
+
+                // 7. Trigger the FallToGround sequence. This should now succeed.
+                // The function will use startFallingPosition set in step 5.
+                grabObject.Key.FallToGround(randomizePosition: false, justSpawned: false);
+
+                // 8. Re-enable colliders/physics
+                grabObject.Key.EnablePhysics(true);
+
+                SithCompanyMod.mls.LogInfo($"Successfully released and dropped object: {grabObject.Key.name}");
+
+            }
+        }
+        public static void ReleaseEnemies()
+        {
+            foreach (var enemyObject in ForceAbility.enemyHits)
+            {
+                EnemyAI enemy = enemyObject.Key;
+
+                // 1. Restore AI Logic flags
+                enemy.inSpecialAnimation = false;
+
+                // CRITICAL FIX: Re-enable NavMeshAgent and AI calculation
+                enemy.SetClientCalculatingAI(true);
+
+                SithCompanyMod.mls.LogInfo($"Released EnemyAI: {enemy.name}");
+            }
+        }
         // find all grabbable objects, players, and enemies in a sphere
         public static void FindTargetsInSphere(Vector3 center, float radius)
         {

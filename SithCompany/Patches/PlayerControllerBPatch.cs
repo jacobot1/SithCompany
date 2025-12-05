@@ -36,52 +36,7 @@ namespace SithCompany.Patches
                     }
                     else if (SithCompanyMod.SithInputInstance.UseTheForceButton.WasReleasedThisFrame())
                     {
-                        ForceAbility.gotForcablesAlready = false;
-
-                        // Define a guaranteed safe drop location near the player's feet.
-                        Vector3 indicatorDropWorldPos = ForceAbility.indicator.transform.position;
-                        indicatorDropWorldPos.y += 0.1f;
-                        
-                        foreach (var grabObject in ForceAbility.grabbableHits)
-                        {
-                            // 1. Clear internal state flags FIRST
-                            grabObject.Key.parentObject = null;
-                            grabObject.Key.isHeld = false;
-
-                            // 2. Release network ownership (Crucial for local physics authority)
-                            if (grabObject.Key.IsOwner)
-                            {
-                                grabObject.Key.gameObject.GetComponent<NetworkObject>().RemoveOwnership();
-                            }
-
-                            // 3. Clear the Unity Transform parent and maintain the current world position
-                            grabObject.Key.transform.SetParent(null, true);
-
-                            // 4. Force teleport the world position to the indicator
-                            grabObject.Key.transform.position = indicatorDropWorldPos;
-
-                            // 5. Manually set the field FallToGround relies on, using the new world position as the local position.
-                            grabObject.Key.startFallingPosition = grabObject.Key.transform.localPosition;
-
-
-                            // 6. Temporarily disable colliders for safe raycasting
-                            if (grabObject.Key.propBody != null)
-                            {
-                                grabObject.Key.propBody.isKinematic = false;
-                                grabObject.Key.propBody.velocity = Vector3.zero;
-                                grabObject.Key.propBody.angularVelocity = Vector3.zero;
-                            }
-                            grabObject.Key.EnablePhysics(false);
-
-                            // 7. Trigger the FallToGround sequence. This should now succeed.
-                            // The function will use startFallingPosition set in step 5.
-                            grabObject.Key.FallToGround(randomizePosition: false, justSpawned: false);
-
-                            // 8. Re-enable colliders/physics
-                            grabObject.Key.EnablePhysics(true);
-
-                            SithCompanyMod.mls.LogInfo($"Successfully released and dropped object: {grabObject.Key.name}");
-                        }
+                        ForceAbility.ReleaseTheForce();
                     }
                 }
             }
