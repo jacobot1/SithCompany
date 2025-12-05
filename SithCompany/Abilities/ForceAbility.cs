@@ -3,6 +3,7 @@ using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace SithCompany.Abilities
@@ -99,7 +100,15 @@ namespace SithCompany.Abilities
             }
             foreach (var grabObject in grabbableHits)
             {
+                if (!grabObject.Key.IsOwner)
+                {
+                    grabObject.Key.gameObject.GetComponent<NetworkObject>().ChangeOwnership(player.OwnerClientId);
+                }
                 grabObject.Key.transform.SetParent(indicator.transform, true);
+                grabObject.Key.parentObject = indicator.transform;
+                grabObject.Key.isHeld = true;
+                grabObject.Key.transform.rotation = indicator.transform.rotation;
+                grabObject.Key.EnablePhysics(false);
                 // SithCompanyMod.mls.LogInfo("Set GrabbableObject transform.position to " + grabObject.Key.transform.position);
             }
             foreach (var playerObject in playerHits)
