@@ -2,9 +2,10 @@
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
-using SithCompany.Patches;
 using SithCompany.Abilities;
+using SithCompany.Patches;
 using SithCompany.Util;
+using System.IO;
 using UnityEngine;
 
 namespace SithCompany
@@ -90,6 +91,13 @@ namespace SithCompany
                                                 2f,
                                                 "How large the influence of the Force should be");
 
+            // Load indicator AssetBundle
+            var bundlePath = Path.Combine(Paths.PluginPath, "SeismicMods-SithCompany/bubblebundle");
+            var bundle = AssetBundle.LoadFromFile(bundlePath);
+
+            // Find the shader compiled from file above
+            ForceAbility.bubbleShader = bundle.LoadAsset<Shader>("ThinBubbleUnlit");
+
             // Subscribe to config changes
             configForceRadius.SettingChanged += OnSettingChanged;
 
@@ -97,6 +105,8 @@ namespace SithCompany
             harmony.PatchAll(typeof(SithCompanyMod));
             harmony.PatchAll(typeof(PlayerControllerBPatch));
             harmony.PatchAll(typeof(KickIfModNotInstalled));
+            harmony.PatchAll(typeof(QuickMenuManagerPatch));
+            harmony.PatchAll(typeof(StartOfRoundPatch));
         }
     }
 }

@@ -2,7 +2,6 @@
 using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using UnityEngine;
 
@@ -14,6 +13,7 @@ namespace SithCompany.Abilities
         public static float indicatorDistance = 5f;
         public static bool gotForcablesAlready = false;
         public static GameObject indicator;
+        public static Shader bubbleShader;
 
         public static Dictionary<GrabbableObject, Transform> grabbableHits = new Dictionary<GrabbableObject, Transform>();
         public static Dictionary<PlayerControllerB, Vector3> playerHits = new Dictionary<PlayerControllerB, Vector3>();
@@ -27,12 +27,6 @@ namespace SithCompany.Abilities
             UnityEngine.Object.Destroy(indicator.GetComponent<Collider>());
             indicator.transform.localScale = Vector3.one * radius * 2f;
 
-            // Import assetbundle
-            var bundlePath = Path.Combine(Paths.PluginPath, "SeismicMods-SithCompany/bubblebundle");
-            var bundle = AssetBundle.LoadFromFile(bundlePath);
-
-            // Find the shader compiled from file above
-            Shader bubbleShader = bundle.LoadAsset<Shader>("ThinBubbleUnlit");
             if (bubbleShader == null)
             {
                 Debug.LogError("[BubbleIndicator] Shader 'Custom/ThinBubbleUnlit' not found. Make sure the .shader file is included in the build.");
@@ -56,7 +50,20 @@ namespace SithCompany.Abilities
             // Start disabled by default
             indicator.SetActive(false);
         }
+        public static void CleanupIndicator()
+        {
+            if (indicator != null)
+            {
+                // Explicitly destroy the Unity GameObject
+                UnityEngine.Object.Destroy(indicator);
+                // Set the static reference to null so it can be re-created later
+                indicator = null;
+                // Also reset the mode state
+                forceModeEnabled = false;
 
+                SithCompanyMod.mls.LogInfo("Force Indicator cleaned up on round end.");
+            }
+        }
         public static void ToggleForceMode(PlayerControllerB player)
         {
             if (forceModeEnabled)
@@ -92,7 +99,7 @@ namespace SithCompany.Abilities
             }
             foreach (var grabObject in grabbableHits)
             {
-                grabObject.Key.parentObject = indicator.transform;
+                grabObject.Key.transform.SetParent(indicator.transform, true);
                 // SithCompanyMod.mls.LogInfo("Set GrabbableObject transform.position to " + grabObject.Key.transform.position);
             }
             foreach (var playerObject in playerHits)

@@ -38,8 +38,7 @@ namespace SithCompany.Patches
                         ForceAbility.gotForcablesAlready = false;
                         foreach (var grabObject in ForceAbility.grabbableHits)
                         {
-                            grabObject.Value.position = grabObject.Key.transform.position;
-                            grabObject.Key.parentObject = grabObject.Value;
+                            grabObject.Key.transform.SetParent(grabObject.Value, true);
                             SithCompanyMod.mls.LogInfo("Set GrabbableObject parentObject");
                         }
                     }
