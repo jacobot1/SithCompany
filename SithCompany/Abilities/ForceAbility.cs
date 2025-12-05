@@ -16,6 +16,10 @@ namespace SithCompany.Abilities
         public static GameObject indicator;
         public static Shader bubbleShader;
 
+        public static float Gravity = -12f; // Increased gravity for a noticeable fall
+        public static float InitialFallImpulse = 10f; // Initial downward speed when released
+        public static Dictionary<EnemyAI, Vector3> fallingEnemies = new Dictionary<EnemyAI, Vector3>(); // New state tracker
+
         public static Dictionary<GrabbableObject, Transform> grabbableHits = new Dictionary<GrabbableObject, Transform>();
         public static Dictionary<PlayerControllerB, Vector3> playerHits = new Dictionary<PlayerControllerB, Vector3>();
         public static Dictionary<EnemyAI, Vector3> enemyHits = new Dictionary<EnemyAI, Vector3>();
@@ -131,7 +135,12 @@ namespace SithCompany.Abilities
                 // CRITICAL FIX B: Set internal flag to pause AI logic in the Update loop
                 enemy.inSpecialAnimation = true;
 
-                SithCompanyMod.mls.LogInfo("Set EnemyAI transform.position to " + enemyObject.Key.transform.position);
+                // NEW: If a Rigidbody is present, disable physics while held
+                Rigidbody rb = enemy.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.isKinematic = true;
+                }
             }
         }
         public static void ReleaseTheForce()
@@ -197,11 +206,16 @@ namespace SithCompany.Abilities
                 // 1. Restore AI Logic flags
                 enemy.inSpecialAnimation = false;
 
-                // CRITICAL FIX: Re-enable NavMeshAgent and AI calculation
-                enemy.SetClientCalculatingAI(true);
+                // 2. CRITICAL: Add to falling state with downward velocity
+                Vector3 initialVelocity = Vector3.down * InitialFallImpulse;
+                if (!fallingEnemies.ContainsKey(enemy))
+                {
+                    fallingEnemies.Add(enemy, initialVelocity);
+                }
 
                 SithCompanyMod.mls.LogInfo($"Released EnemyAI: {enemy.name}");
             }
+            enemyHits.Clear();
         }
         // find all grabbable objects, players, and enemies in a sphere
         public static void FindTargetsInSphere(Vector3 center, float radius)
@@ -225,18 +239,18 @@ namespace SithCompany.Abilities
                     SithCompanyMod.mls.LogInfo("Found PlayerControllerB at " + playerCol.transform.position.ToString());
                 }
                 // Enemy
-                var enemyCol = c.GetComponent<EnemyAI>();
-                if (enemyCol != null)
+                EnemyAICollisionDetect enemyCollision = c.GetComponent<EnemyAICollisionDetect>();
+                if ((enemyCollision != null) && (enemyCollision.mainScript != null))
                 {
-                    EnemyAICollisionDetect enemyCollision = enemyCol.GetComponent<EnemyAICollisionDetect>();
-                    if ((enemyCollision != null) && (enemyCollision.mainScript != null))
+                    // The mainScript field holds the reference to the main EnemyAI component.
+                    EnemyAI enemy = enemyCollision.mainScript;
+                    if (enemy != null && !enemyHits.ContainsKey(enemy))
                     {
-                        var enemy = enemyCollision.mainScript;
-                        if (enemy != null && !enemyHits.ContainsKey(enemy))
-                        {
-                            enemyHits.Add(enemy, enemy.transform.position - indicator.transform.position);
-                            SithCompanyMod.mls.LogInfo("Found EnemyAI at " + enemy.transform.position.ToString());
-                        }
+                        // 1. Claim ownership of the enemy if not already owned by the server.
+                        // We don't claim ownership here, just track it. Ownership is claimed in UseTheForce.
+
+                        enemyHits.Add(enemy, enemy.transform.position - indicator.transform.position);
+                        SithCompanyMod.mls.LogInfo("Found EnemyAI at " + enemy.transform.position.ToString());
                     }
                 }
             }
