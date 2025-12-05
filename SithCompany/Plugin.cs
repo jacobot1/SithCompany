@@ -25,10 +25,17 @@ namespace SithCompany
         // Configuration
         public static ConfigEntry<float> configLightningVolume;
         public static ConfigEntry<float> configLightningDamageRadius;
+        public static ConfigEntry<float> configLightningMinimumStamina;
+        public static ConfigEntry<float> configLightningStaminaDock;
         public static ConfigEntry<float> configLightningLength;
         public static ConfigEntry<bool> configKillEnemies;
         public static ConfigEntry<bool> configKillPlayers;
         public static ConfigEntry<float> configForceRadius;
+        public static ConfigEntry<float> configEnemyFallGravity;
+        public static ConfigEntry<float> configDefaultForceIndicatorDistance;
+        public static ConfigEntry<float> configForceRange;
+        public static ConfigEntry<float> configForceStaminaMultiplier;
+        public static ConfigEntry<float> configForceMinimumStamina;
 
         // Create static instance
         public static SithCompanyMod Instance;
@@ -71,7 +78,25 @@ namespace SithCompany
                                                 3f,
                                                 "How close players/enemies must be to the end of a lighting bolt to be killed by it");
 
-            configLightningLength = Config.Bind("Lightning.Length",
+            configLightningMinimumStamina = Config.Bind("Lightning.General",
+                                                "Force Lightning Minimum Stamina",
+                                                0.6f,
+                                                new ConfigDescription(
+                                                    "Minimum Stamina required to use Force Lightning",
+                                                    new AcceptableValueRange<float>(0f, 1f)
+                                                )
+                                            );
+
+            configLightningStaminaDock = Config.Bind("Lightning.General",
+                                                "Force Lightning Stamina Dock",
+                                                0.6f,
+                                                new ConfigDescription(
+                                                    "Stamina cost of using Force Lightning",
+                                                    new AcceptableValueRange<float>(0f, 1f)
+                                                )
+                                            );
+
+            configLightningLength = Config.Bind("Lightning.General",
                                                 "Length",
                                                 10f,
                                                 "How long lightning bolt should be");
@@ -86,10 +111,39 @@ namespace SithCompany
                                                 true,
                                                 "Whether to kill enemies on lightning strike");
 
-            configForceRadius = Config.Bind("Force",
+            configForceRadius = Config.Bind("Force.Influence",
                                                 "Force Radius",
                                                 2f,
                                                 "How large the influence of the Force should be");
+
+            configForceMinimumStamina = Config.Bind("Force.General",
+                                                "Force Minimum Stamina",
+                                                0f,
+                                                new ConfigDescription(
+                                                    "Minimum Stamina required to use the Force",
+                                                    new AcceptableValueRange<float>(0f, 1f)
+                                                )
+                                            );
+
+            configForceStaminaMultiplier = Config.Bind("Force.General",
+                                                "Force Stamina Use Multiplier",
+                                                1f,
+                                                "Adjusts speed of stamina use while using the Force");
+
+            configEnemyFallGravity = Config.Bind("Force.Enemies",
+                                                "Enemy Fall Gravity",
+                                                15f,
+                                                "How much gravity falling enemies should experience");
+
+            configDefaultForceIndicatorDistance = Config.Bind("Force.Influence",
+                                                "Default Force Indicator Distance",
+                                                5f,
+                                                "How far the Force Indicator should be from the player upon enabling Force Mode");
+
+            configForceRange = Config.Bind("Force.Influence",
+                                                "Maximum Force Influence Range",
+                                                50f,
+                                                "Maximum distance at which the Force can be used.");
 
             // Load indicator AssetBundle
             var bundlePath = Path.Combine(Paths.PluginPath, "SeismicMods-SithCompany/bubblebundle");

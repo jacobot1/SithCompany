@@ -11,9 +11,13 @@ namespace SithCompany.Abilities
     {
         public static void ForceLightning(PlayerControllerB player)
         {
+            if (player.sprintMeter < SithCompanyMod.configLightningMinimumStamina.Value)
+            {
+                return;
+            }
             // Perform point emote
             Scripts.PerformEmoteProgrammatically(player, 2);
-            
+
             // Simplifications
             Vector3 playerPosition = player.transform.position;
             Vector3 strikeOrigin = playerPosition + player.transform.forward * 1f + Vector3.up * 2f;
@@ -33,7 +37,7 @@ namespace SithCompany.Abilities
             EZLightning.API.Strike(strikePosition, strikeOrigin, 1f, 0.5f, 0.5f, 0, -1f, minCount: 0, maxCount: 1);
 
             // Dock sprint
-            player.sprintMeter = Mathf.Clamp(player.sprintMeter - 0.6f, 0f, 1f);
+            player.sprintMeter = Mathf.Clamp(player.sprintMeter - SithCompanyMod.configLightningStaminaDock.Value, 0f, 1f);
         }
     }
 }

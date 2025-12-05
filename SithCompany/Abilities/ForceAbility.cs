@@ -12,12 +12,11 @@ namespace SithCompany.Abilities
     {
         public static bool forceModeEnabled = false;
         public static float indicatorDistance = 5f;
+        public static float targetIndicatorDistance = 5f;
         public static bool gotForcablesAlready = false;
         public static GameObject indicator;
         public static Shader bubbleShader;
-
-        public static float Gravity = -12f; // Increased gravity for a noticeable fall
-        public static float InitialFallImpulse = 10f; // Initial downward speed when released
+        public static float initialFallImpulse = 10f; // Initial downward speed when released
         public static Dictionary<EnemyAI, Vector3> fallingEnemies = new Dictionary<EnemyAI, Vector3>(); // New state tracker
 
         public static Dictionary<GrabbableObject, Transform> grabbableHits = new Dictionary<GrabbableObject, Transform>();
@@ -89,11 +88,16 @@ namespace SithCompany.Abilities
                 {
                     ForceAbility.CreateIndicator(SithCompanyMod.configForceRadius.Value);
                 }
+                indicatorDistance = SithCompanyMod.configDefaultForceIndicatorDistance.Value;
                 indicator.SetActive(true);
             }
         }
         public static void UseTheForce(PlayerControllerB player)
         {
+            if (player.sprintMeter < SithCompanyMod.configForceMinimumStamina.Value)
+            {
+                return;
+            }
             if (!gotForcablesAlready)
             {
                 playerHits.Clear();
@@ -142,6 +146,9 @@ namespace SithCompany.Abilities
                     rb.isKinematic = true;
                 }
             }
+
+            // Dock Stamina
+            player.sprintMeter = Mathf.Clamp(player.sprintMeter - (0.01f * SithCompanyMod.configForceStaminaMultiplier.Value), 0f, 1f);
         }
         public static void ReleaseTheForce()
         {
@@ -203,11 +210,8 @@ namespace SithCompany.Abilities
             {
                 EnemyAI enemy = enemyObject.Key;
 
-                // 1. Restore AI Logic flags
-                enemy.inSpecialAnimation = false;
-
                 // 2. CRITICAL: Add to falling state with downward velocity
-                Vector3 initialVelocity = Vector3.down * InitialFallImpulse;
+                Vector3 initialVelocity = Vector3.down * initialFallImpulse;
                 if (!fallingEnemies.ContainsKey(enemy))
                 {
                     fallingEnemies.Add(enemy, initialVelocity);
