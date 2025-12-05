@@ -44,9 +44,16 @@ namespace SithCompany.Patches
                     {
                         ForceAbility.UseTheForce(__instance);
                     }
-                    else if (SithCompanyMod.SithInputInstance.UseTheForceButton.WasReleasedThisFrame())
+                    else
                     {
-                        ForceAbility.ReleaseTheForce();
+                        if (ForceAbility.staminaReleaseActive)
+                        {
+                            ForceAbility.staminaReleaseActive = false;
+                        }
+                        if (SithCompanyMod.SithInputInstance.UseTheForceButton.WasReleasedThisFrame())
+                        {
+                            ForceAbility.ReleaseTheForce();
+                        }
                     }
                 }
                 // --- START OF MANUAL FALLING ENEMY LOGIC ---

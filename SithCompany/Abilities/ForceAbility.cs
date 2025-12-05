@@ -11,9 +11,10 @@ namespace SithCompany.Abilities
     internal class ForceAbility
     {
         public static bool forceModeEnabled = false;
-        public static float indicatorDistance = 5f;
         public static float targetIndicatorDistance = 5f;
         public static bool gotForcablesAlready = false;
+        public static bool staminaReleaseActive = false;
+        public static float indicatorDistance = 5f;
         public static GameObject indicator;
         public static Shader bubbleShader;
         public static float initialFallImpulse = 10f; // Initial downward speed when released
@@ -94,8 +95,13 @@ namespace SithCompany.Abilities
         }
         public static void UseTheForce(PlayerControllerB player)
         {
+            if (staminaReleaseActive) // <--- CRITICAL: Block re-entry if stamina forced a release.
+            {
+                return;
+            }
             if (player.sprintMeter < SithCompanyMod.configForceMinimumStamina.Value)
             {
+                staminaReleaseActive = true;
                 ReleaseTheForce();
                 return;
             }
