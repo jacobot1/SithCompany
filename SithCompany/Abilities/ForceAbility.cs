@@ -96,6 +96,7 @@ namespace SithCompany.Abilities
         {
             if (player.sprintMeter < SithCompanyMod.configForceMinimumStamina.Value)
             {
+                ReleaseTheForce();
                 return;
             }
             if (!gotForcablesAlready)
@@ -148,7 +149,7 @@ namespace SithCompany.Abilities
             }
 
             // Dock Stamina
-            player.sprintMeter = Mathf.Clamp(player.sprintMeter - (0.01f * SithCompanyMod.configForceStaminaMultiplier.Value), 0f, 1f);
+            player.sprintMeter = Mathf.Clamp(player.sprintMeter - (SithCompanyMod.configForceStaminaMultiplier.Value * 0.3f * Time.deltaTime), 0f, 1f);
         }
         public static void ReleaseTheForce()
         {
@@ -201,8 +202,8 @@ namespace SithCompany.Abilities
                 grabObject.Key.EnablePhysics(true);
 
                 SithCompanyMod.mls.LogInfo($"Successfully released and dropped object: {grabObject.Key.name}");
-
             }
+            grabbableHits.Clear();
         }
         public static void ReleaseEnemies()
         {
